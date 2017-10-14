@@ -6,14 +6,13 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/10/14 12:10:14 by asarandi          #+#    #+#             */
-/*   Updated: 2017/10/14 12:50:47 by asarandi         ###   ########.fr       */
+/*   Updated: 2017/10/14 12:55:53 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "get_next_line.h"
 
-int get_next_line(const int fd, char **line)
+int	get_next_line(const int fd, char **line)
 {
-
 	return (0);
 }

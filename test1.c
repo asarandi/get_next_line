@@ -14,7 +14,7 @@ int main(int argc, char **argv)
 
 		char *ptr;
 		int i = 1;
-		while(get_next_line(fd, &ptr))
+		while((get_next_line(fd, &ptr)) == 1)
 		{
 					printf("line # %d, value is: %s\n", i, ptr);
 					free(ptr);

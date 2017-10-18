@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/10/14 12:10:14 by asarandi          #+#    #+#             */
-/*   Updated: 2017/10/17 22:50:51 by asarandi         ###   ########.fr       */
+/*   Updated: 2017/10/18 01:18:01 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -116,6 +116,9 @@ char	*mem_increase(char *src, int existing, int additional)
 	return (dst);
 }
 
+
+
+
 int	get_next_line(const int fd, char **line)
 {
 	static t_gnl	first;
@@ -124,75 +127,82 @@ int	get_next_line(const int fd, char **line)
 	char	*m2;
 	int		msize = 0;
 	int		r;
+	char	c;
 
-	if (fd == first.fd)
+	if ((fd == 1) || (fd == 2))
+		return (-1);
+
+	if (first.fd == fd)
 	{
-		if (first.eof)
-			return (0);
-
 		m1 = first.mem;
 		msize = first.size;
+		r = msize;
 	}
 	else
 	{
-		if ((r = read_buff_size(fd, &m1)) == -1)
+		if ((read(fd, &c, 0)) == -1) //bad fd
+			return (-1);
+		if ((m1 = ft_memalloc(BUFF_SIZE)) == NULL) //malloc fail
+			return (-1);
+		if ((r = read(fd, m1, BUFF_SIZE)) == 0) //eof
 		{
 			*line = NULL;
-			return (-1);
+			free(m1);
+			return (0);
 		}
 		msize = BUFF_SIZE;
+	}
+	// msize is size of memory
+	// m1 is memory
+	// r is number of bytes read
+	int i = 0;
+	while (m1[i] == '\n')
+		i++;
+	if (i)
+	{
+		msize -= i;
+		if ((m2 = ft_memalloc(msize)) == NULL)
+			return (-1);
+		ft_memcpy(m2, &m1[i], msize);
+		free(m1);
+		m1 = m2;
+		m2 = NULL;
 	}
 
 	while ((m2 = ft_memchr(m1, '\n', msize)) == NULL)
 	{
-		m1 = mem_increase(m1, msize, BUFF_SIZE);
-		r = read(fd, &m1[msize], BUFF_SIZE);
-		if (r < 0)
+		if ((!r) && (m1[0]))
+		{
+			*line = m1;
+			return (1);
+		}
+		else if ((!r) && (!m1[0]))
 		{
 			*line = NULL;
-			free(m1);
-			return (r);
+			return (0);
 		}
 
-		msize += r;
+
+		if ((m1 = mem_increase(m1, msize, BUFF_SIZE)) == NULL)
+			return (-1);
+		r = read(fd, &m1[msize], BUFF_SIZE);
+		msize += BUFF_SIZE;
 	}
-	*line = ft_memcpy(ft_memalloc(m2 - m1 + 1), m1, m2 - m1);
 
-	char *save = 0;
-	msize = msize - (m2 - m1) - 1;
+	int	rsize = 0;
+	char *ret;
 
-	if ((msize > 0) && (r == BUFF_SIZE))
-	{
-		save = ft_memcpy(ft_memalloc(msize), m2 + 1, msize);
-		first.fd = fd;
-		first.mem = save;
-		first.size = msize;
+	rsize = m2 - m1;
 
-	}
-	free(m1);
+	if ((ret = ft_memalloc(rsize + 1)) == NULL)
+		return (-1);
+	*line = ft_memcpy(ret, m1, rsize);
+
+	if ((first.mem = ft_memalloc(msize - rsize)) == NULL)
+		return (-1);
+	first.mem = ft_memcpy(first.mem, &m1[rsize], msize - rsize );
+	first.size = msize - rsize;
 	first.fd = fd;
-	first.mem = save;
-	first.size = msize;
-
-	if ((msize >= 0) && (r == BUFF_SIZE))
-		return (1);
-
-	if (r < BUFF_SIZE)
-	{
-		first.eof = 1;
-		return (1);
-	}
-
-
-
-
-	return (-1);
-	
-
-
-//	printf("%s", mem);
-
-	
-
-	return (0);
+	free(m1);
+	return (1);
 }

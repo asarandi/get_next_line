@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/10/14 12:10:14 by asarandi          #+#    #+#             */
-/*   Updated: 2017/10/18 01:18:01 by asarandi         ###   ########.fr       */
+/*   Updated: 2017/10/18 03:43:09 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,21 +63,6 @@ void	*ft_memchr(const void *s, int c, size_t n)
 }
 
 
-static int	read_buff_size(int fd, char **buf)
-{
-	char	c;
-
-	if ((read(fd, &c, 0)) == -1)
-		return (-1);
-	if ((*buf = ft_memalloc(BUFF_SIZE)) == NULL)
-		return (-1);
-	return (read(fd, *buf, BUFF_SIZE));
-}
-
-
-
-
-
 /* logic: read buff_size from fd,
 ** if buffer does not contain '\n', read another
 ** if '\n' is in the middle of buffer - allocate 2 mem buffers:
@@ -129,14 +114,20 @@ int	get_next_line(const int fd, char **line)
 	int		r;
 	char	c;
 
+	int	eof = 0;
+
 	if ((fd == 1) || (fd == 2))
 		return (-1);
 
-	if (first.fd == fd)
+	if ((fd != 0) && (first.fd == fd))
 	{
 		m1 = first.mem;
 		msize = first.size;
-		r = msize;
+	}
+	else if ((fd == 0) && (first.size != 0))
+	{
+		m1 = first.mem;
+		msize = first.size;
 	}
 	else
 	{
@@ -146,8 +137,9 @@ int	get_next_line(const int fd, char **line)
 			return (-1);
 		if ((r = read(fd, m1, BUFF_SIZE)) == 0) //eof
 		{
-			*line = NULL;
+			first.eof = 1;
 			free(m1);
+			*line = NULL;
 			return (0);
 		}
 		msize = BUFF_SIZE;
@@ -155,37 +147,49 @@ int	get_next_line(const int fd, char **line)
 	// msize is size of memory
 	// m1 is memory
 	// r is number of bytes read
-	int i = 0;
-	while (m1[i] == '\n')
-		i++;
-	if (i)
+	
+/*	if (m1[0] == '\n')
 	{
-		msize -= i;
-		if ((m2 = ft_memalloc(msize)) == NULL)
+		*line = NULL;
+		msize -= 1;
+		if (msize >= 1)
+		{
+			if ((m2 = ft_memalloc(msize)) == NULL)
 			return (-1);
-		ft_memcpy(m2, &m1[i], msize);
-		free(m1);
-		m1 = m2;
-		m2 = NULL;
-	}
+			ft_memcpy(m2, &m1[1], msize);
+			free(m1);
+			m1 = m2;
+			first.mem = m1;
+			first.size = msize;
+			if (m1[0])
+				return (1);
+		}
 
+		return (0);
+	}
+*/
 	while ((m2 = ft_memchr(m1, '\n', msize)) == NULL)
 	{
-		if ((!r) && (m1[0]))
+		if ((eof) && (m1[0]))
 		{
 			*line = m1;
+			first.fd = 0;
+			first.size = 0;
 			return (1);
 		}
-		else if ((!r) && (!m1[0]))
+		else if ((eof) && (!m1[0]))
 		{
+			first.fd = 0;
+			first.size = 0;
 			*line = NULL;
 			return (0);
 		}
 
-
 		if ((m1 = mem_increase(m1, msize, BUFF_SIZE)) == NULL)
 			return (-1);
-		r = read(fd, &m1[msize], BUFF_SIZE);
+		if ((r = read(fd, &m1[msize], BUFF_SIZE)) == 0)
+			eof = 1;
+
 		msize += BUFF_SIZE;
 	}
 
@@ -198,10 +202,10 @@ int	get_next_line(const int fd, char **line)
 		return (-1);
 	*line = ft_memcpy(ret, m1, rsize);
 
-	if ((first.mem = ft_memalloc(msize - rsize)) == NULL)
+	if ((first.mem = ft_memalloc(msize - rsize - 1)) == NULL)
 		return (-1);
-	first.mem = ft_memcpy(first.mem, &m1[rsize], msize - rsize );
-	first.size = msize - rsize;
+	first.mem = ft_memcpy(first.mem, &m1[rsize + 1], msize - rsize - 1);
+	first.size = msize - rsize - 1;
 	first.fd = fd;
 	free(m1);
 	return (1);

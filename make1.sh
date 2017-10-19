@@ -1,4 +1,4 @@
 #!/bin/bash
-rm *.o
+cd libft; make fclean; make; make clean; cd ..;
 rm gnl
-gcc -g test1.c get_next_line.c -o gnl
+gcc -g -Llibft -lft main.c get_next_line.c -o gnl

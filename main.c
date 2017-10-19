@@ -8,9 +8,12 @@
 
 int main(int argc, char **argv)
 {
+	int fd;
+
 	if (argc == 2)
-	{
-		int fd = open(argv[1], O_RDONLY);
+		fd = open(argv[1], O_RDONLY);
+	else
+		fd = 0;
 
 		char *ptr;
 		int i = 1;
@@ -21,7 +24,7 @@ int main(int argc, char **argv)
 					i++;
 		}
 		close(fd);
-	}
+		sleep(30);
 	return (0);
 }
 

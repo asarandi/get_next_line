@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/10/14 12:10:14 by asarandi          #+#    #+#             */
-/*   Updated: 2017/10/18 21:42:04 by asarandi         ###   ########.fr       */
+/*   Updated: 2017/10/18 22:21:48 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,7 +28,6 @@ char	*mem_increase(char *src, int existing, int additional)
 int	get_next_line(const int fd, char **line)
 {
 	static t_gnl	first;
-
 	char	*m1;
 	char	*m2;
 	int		msize;
@@ -72,6 +71,8 @@ int	get_next_line(const int fd, char **line)
 		}
 		else if ((eof) && (!m1[0]))
 		{
+			if (msize)
+				free(m1);
 			first.mem = 0;
 			*line = NULL;
 			return (0);
@@ -89,7 +90,7 @@ int	get_next_line(const int fd, char **line)
 
 	if ((first.mem = ft_memalloc(msize - rsize - 1)) == NULL)
 		return (-1);
-	first.mem = ft_memcpy(first.mem, &m1[rsize + 1], msize - rsize - 1);
+	ft_memcpy(first.mem, &m1[rsize + 1], msize - rsize - 1);
 	first.size = msize - rsize - 1;
 	first.fd = fd;
 	free(m1);

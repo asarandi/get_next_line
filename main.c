@@ -24,7 +24,7 @@ int main(int argc, char **argv)
 					i++;
 		}
 		close(fd);
-		sleep(30);
+//		sleep(30);
 	return (0);
 }
 

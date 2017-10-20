@@ -6,100 +6,114 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/10/14 12:10:14 by asarandi          #+#    #+#             */
-/*   Updated: 2017/10/19 03:15:13 by asarandi         ###   ########.fr       */
+/*   Updated: 2017/10/20 03:45:37 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "libft/libft.h"
 #include "get_next_line.h"
 
-char	*mem_increase(char *src, int cur, int add)
+int		gnl_more_mem(char **m1, t_gnl **gnl)
 {
-	char			*dst;
+	char	*new;
 
-	if ((dst = ft_memalloc(cur + add)) == NULL)
-		return (NULL);
-	ft_memcpy(dst, src, cur);
-	free(src);
-	return (dst);
+	if ((new = ft_memalloc((*gnl)->size + BUFF_SIZE)) == NULL)
+		return (-1);
+	ft_memcpy(new, *m1, (*gnl)->size);
+	free(*m1);
+	*m1 = new;
+	if ((read((*gnl)->fd, &new[(*gnl)->size], BUFF_SIZE)) == 0)
+		(*gnl)->eof = 1;
+	(*gnl)->size += BUFF_SIZE;
+	return (1);
+}
+
+int		gnl_read(int fd, t_gnl **gnl, char **memory)
+{
+	if ((read(fd, *memory, 0)) == -1)
+		return (-1);
+	if ((*memory = ft_memalloc(BUFF_SIZE)) == NULL)
+		return (-1);
+	if ((read(fd, *memory, BUFF_SIZE)) == 0)
+	{
+		free(*memory);
+		return (0);
+	}
+	if ((*gnl)->mem && (fd != (*gnl)->fd))
+	{
+		(*gnl)->next = ft_memalloc(sizeof(t_gnl));
+		if ((*gnl)->next == NULL)
+			return (-1);
+		(*gnl)->next->prev = (*gnl);
+		(*gnl) = (*gnl)->next;
+	}
+	(*gnl)->mem = *memory;
+	(*gnl)->size = BUFF_SIZE;
+	(*gnl)->fd = fd;
+	return (1);
+}
+
+int		gnl_save(char **memory, t_gnl **gnl, char **line)
+{
+	int		rsize;
+	char	*mem2;
+
+	mem2 = ft_memchr(*memory, '\n', (*gnl)->size);
+	rsize = (mem2 - *memory) + 1;
+	if ((*line = ft_memalloc(rsize)) == NULL)
+		return (-1);
+	ft_memcpy(*line, *memory, rsize - 1);
+	if (((*gnl)->mem = ft_memalloc((*gnl)->size - rsize)) == NULL)
+		return (-1);
+	ft_memcpy((*gnl)->mem, *memory + rsize, (*gnl)->size - rsize);
+	(*gnl)->size -= rsize;
+	free(*memory);
+	return (1);
+}
+
+int		gnl_main(char **memory, t_gnl **gnl, char **line)
+{
+	while ((ft_memchr(*memory, '\n', (*gnl)->size)) == NULL)
+	{
+		(*gnl)->mem = 0;
+		*line = *memory;
+		if (((*gnl)->eof) && (*memory[0]))
+			return (1);
+		else if (((*gnl)->eof) && (!*memory[0]))
+		{
+			if ((*gnl)->size)
+				free(*memory);
+			if ((*gnl)->prev)
+			{
+				(*gnl) = (*gnl)->prev;
+				free((*gnl)->next);
+				(*gnl)->next = NULL;
+			}
+			return (0);
+		}
+		if ((gnl_more_mem(memory, gnl)) != 1)
+			return (-1);
+	}
+	return (gnl_save(memory, gnl, line));
 }
 
 int		get_next_line(const int fd, char **line)
 {
 	static t_gnl	first;
-	char			*m1;
-	char			*m2;
-	int				eof;
+	char			*memory;
+	int				tmp;
 	t_gnl			*gnl;
 
-	eof = 0;
-	if ((fd == 1) || (fd == 2))
+	if ((fd == 1) || (fd == 2) || (line == NULL))
 		return (-1);
 	gnl = &first;
+	*line = NULL;
 	while ((gnl->fd != fd) && (gnl->mem) && (gnl->next))
 		gnl = gnl->next;
 	if ((gnl->fd == fd) && (gnl->mem))
-		m1 = gnl->mem;
-	else
-	{
-		if ((read(fd, &eof, 0)) == -1)
-			return (-1);
-		if ((m1 = ft_memalloc(BUFF_SIZE)) == NULL)
-			return (-1);
-		if ((read(fd, m1, BUFF_SIZE)) == 0)
-		{
-			free(m1);
-			*line = NULL;
-			return (0);
-		}
-		if ((gnl->mem) && (fd != gnl->fd))
-		{
-			gnl->next = ft_memalloc(sizeof(t_gnl));
-			if (gnl->next == NULL)
-				return (-1);
-			gnl = gnl->next;
-		}
-		gnl->size = BUFF_SIZE;
-		gnl->fd = fd;
-	}
-	while ((m2 = ft_memchr(m1, '\n', gnl->size)) == NULL)
-	{
-		if ((eof) && (m1[0]))
-		{
-			gnl->mem = 0;
-			*line = m1;
-			return (1);
-		}
-		else if ((eof) && (!m1[0]))
-		{
-			if (gnl->size)
-				free(m1);
-			gnl->mem = 0;
-			*line = NULL;
-			if (gnl != &first)
-			{
-				gnl = &first;
-				while (gnl->next->fd != fd)
-					gnl = gnl->next;
-				free(gnl->next);
-				gnl->next = NULL;
-			}
-			return (0);
-		}
-		if ((m1 = mem_increase(m1, gnl->size, BUFF_SIZE)) == NULL)
-			return (-1);
-		if ((read(gnl->fd, &m1[gnl->size], BUFF_SIZE)) == 0)
-			eof = 1;
-		gnl->size += BUFF_SIZE;
-	}
-	eof = (m2 - m1) + 1;
-	if ((*line = ft_memalloc(eof)) == NULL)
-		return (-1);
-	ft_memcpy(*line, m1, eof - 1);
-	if ((gnl->mem = ft_memalloc(gnl->size - eof)) == NULL)
-		return (-1);
-	ft_memcpy(gnl->mem, &m1[eof], gnl->size - eof);
-	gnl->size -= eof;
-	free(m1);
-	return (1);
+		memory = gnl->mem;
+	else if ((tmp = gnl_read(fd, &gnl, &memory)) != 1)
+		return (tmp);
+	gnl->eof = 0;
+	gnl->fd = fd;
+	return (gnl_main(&memory, &gnl, line));
 }

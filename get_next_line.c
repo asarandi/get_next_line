@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/10/14 12:10:14 by asarandi          #+#    #+#             */
-/*   Updated: 2017/10/20 03:45:37 by asarandi         ###   ########.fr       */
+/*   Updated: 2017/10/21 15:25:40 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,11 +29,13 @@ int		gnl_more_mem(char **m1, t_gnl **gnl)
 
 int		gnl_read(int fd, t_gnl **gnl, char **memory)
 {
+	int r;
+
 	if ((read(fd, *memory, 0)) == -1)
 		return (-1);
 	if ((*memory = ft_memalloc(BUFF_SIZE)) == NULL)
 		return (-1);
-	if ((read(fd, *memory, BUFF_SIZE)) == 0)
+	if ((r = read(fd, *memory, BUFF_SIZE)) == 0)
 	{
 		free(*memory);
 		return (0);
@@ -54,7 +56,7 @@ int		gnl_read(int fd, t_gnl **gnl, char **memory)
 
 int		gnl_save(char **memory, t_gnl **gnl, char **line)
 {
-	int		rsize;
+	size_t	rsize;
 	char	*mem2;
 
 	mem2 = ft_memchr(*memory, '\n', (*gnl)->size);
@@ -62,10 +64,15 @@ int		gnl_save(char **memory, t_gnl **gnl, char **line)
 	if ((*line = ft_memalloc(rsize)) == NULL)
 		return (-1);
 	ft_memcpy(*line, *memory, rsize - 1);
-	if (((*gnl)->mem = ft_memalloc((*gnl)->size - rsize)) == NULL)
-		return (-1);
-	ft_memcpy((*gnl)->mem, *memory + rsize, (*gnl)->size - rsize);
-	(*gnl)->size -= rsize;
+	if (((*gnl)->size > rsize) && ((*memory + rsize)[0]))
+	{	
+		if (((*gnl)->mem = ft_memalloc((*gnl)->size - rsize)) == NULL)
+			return (-1);
+		ft_memcpy((*gnl)->mem, *memory + rsize, (*gnl)->size - rsize);
+		(*gnl)->size -= rsize;
+	}
+	else
+		(*gnl)->mem = 0;
 	free(*memory);
 	return (1);
 }
@@ -76,9 +83,9 @@ int		gnl_main(char **memory, t_gnl **gnl, char **line)
 	{
 		(*gnl)->mem = 0;
 		*line = *memory;
-		if (((*gnl)->eof) && (*memory[0]))
+		if (((*gnl)->eof) && ((*memory)[0]))
 			return (1);
-		else if (((*gnl)->eof) && (!*memory[0]))
+		else if (((*gnl)->eof) && (!(*memory)[0]))
 		{
 			if ((*gnl)->size)
 				free(*memory);
@@ -107,9 +114,9 @@ int		get_next_line(const int fd, char **line)
 		return (-1);
 	gnl = &first;
 	*line = NULL;
-	while ((gnl->fd != fd) && (gnl->mem) && (gnl->next))
+	while ((gnl->fd != fd) && (gnl->next))
 		gnl = gnl->next;
-	if ((gnl->fd == fd) && (gnl->mem))
+	if ((gnl->fd == fd) && (gnl->mem)) 
 		memory = gnl->mem;
 	else if ((tmp = gnl_read(fd, &gnl, &memory)) != 1)
 		return (tmp);

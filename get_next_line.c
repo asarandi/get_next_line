@@ -6,21 +6,21 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/10/14 12:10:14 by asarandi          #+#    #+#             */
-/*   Updated: 2017/10/21 15:25:40 by asarandi         ###   ########.fr       */
+/*   Updated: 2017/10/21 18:15:30 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "get_next_line.h"
 
-int		gnl_more_mem(char **m1, t_gnl **gnl)
+int		gnl_more_mem(char **memory, t_gnl **gnl)
 {
 	char	*new;
 
 	if ((new = ft_memalloc((*gnl)->size + BUFF_SIZE)) == NULL)
 		return (-1);
-	ft_memcpy(new, *m1, (*gnl)->size);
-	free(*m1);
-	*m1 = new;
+	ft_memcpy(new, *memory, (*gnl)->size);
+	free(*memory);
+	*memory = new;
 	if ((read((*gnl)->fd, &new[(*gnl)->size], BUFF_SIZE)) == 0)
 		(*gnl)->eof = 1;
 	(*gnl)->size += BUFF_SIZE;
@@ -65,14 +65,17 @@ int		gnl_save(char **memory, t_gnl **gnl, char **line)
 		return (-1);
 	ft_memcpy(*line, *memory, rsize - 1);
 	if (((*gnl)->size > rsize) && ((*memory + rsize)[0]))
-	{	
+	{
 		if (((*gnl)->mem = ft_memalloc((*gnl)->size - rsize)) == NULL)
 			return (-1);
 		ft_memcpy((*gnl)->mem, *memory + rsize, (*gnl)->size - rsize);
 		(*gnl)->size -= rsize;
 	}
 	else
+	{
 		(*gnl)->mem = 0;
+		(*gnl)->size = 0;
+	}
 	free(*memory);
 	return (1);
 }
@@ -88,7 +91,10 @@ int		gnl_main(char **memory, t_gnl **gnl, char **line)
 		else if (((*gnl)->eof) && (!(*memory)[0]))
 		{
 			if ((*gnl)->size)
+			{
 				free(*memory);
+				(*gnl)->size = 0;
+			}
 			if ((*gnl)->prev)
 			{
 				(*gnl) = (*gnl)->prev;
@@ -116,7 +122,7 @@ int		get_next_line(const int fd, char **line)
 	*line = NULL;
 	while ((gnl->fd != fd) && (gnl->next))
 		gnl = gnl->next;
-	if ((gnl->fd == fd) && (gnl->mem)) 
+	if ((gnl->fd == fd) && (gnl->mem))
 		memory = gnl->mem;
 	else if ((tmp = gnl_read(fd, &gnl, &memory)) != 1)
 		return (tmp);

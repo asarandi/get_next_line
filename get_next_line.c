@@ -6,7 +6,7 @@
 /*   By: asarandi <asarandi@student.42.us.org>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/10/14 12:10:14 by asarandi          #+#    #+#             */
-/*   Updated: 2017/10/21 18:15:30 by asarandi         ###   ########.fr       */
+/*   Updated: 2017/10/21 18:53:45 by asarandi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -90,16 +90,14 @@ int		gnl_main(char **memory, t_gnl **gnl, char **line)
 			return (1);
 		else if (((*gnl)->eof) && (!(*memory)[0]))
 		{
+			*line = NULL;
 			if ((*gnl)->size)
-			{
 				free(*memory);
-				(*gnl)->size = 0;
-			}
+			(*gnl)->size = 0;
 			if ((*gnl)->prev)
 			{
-				(*gnl) = (*gnl)->prev;
-				free((*gnl)->next);
-				(*gnl)->next = NULL;
+				(*gnl)->prev->next = NULL;
+				free(*gnl);
 			}
 			return (0);
 		}
